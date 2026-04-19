@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AroYett — AC/DC Fan & Arşiv Platformu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;1,300&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a08;
+      --bg2: #111109;
+      --surface: #161612;
+      --border: #2a2a22;
+      --red: #c8001a;
+      --red-hot: #ff1a30;
+      --gold: #c9a227;
+      --text: #e8e4d4;
+      --muted: #7a7668;
+      --accent: #f0e6c0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* CUSTOM CURSOR */
+    .cursor {
+      position: fixed;
+      width: 10px; height: 10px;
+      background: var(--red-hot);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.08s, width 0.2s, height 0.2s, background 0.2s;
+      mix-blend-mode: screen;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 36px; height: 36px;
+      border: 1px solid var(--red);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.18s ease, width 0.2s, height 0.2s, opacity 0.2s;
+      opacity: 0.5;
+    }
+
+    /* NOISE OVERLAY */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.35;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: linear-gradient(to bottom, rgba(10,10,8,0.97) 0%, transparent 100%);
+    }
+
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--red); }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--red-hot); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 48px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 80% 50%, rgba(200,0,26,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(201,162,39,0.06) 0%, transparent 60%),
+        #0a0a08;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(42,42,34,0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(42,42,34,0.3) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    .hero-year {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(160px, 22vw, 320px);
+      color: rgba(200,0,26,0.06);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      letter-spacing: -8px;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+    }
+
+    .hero-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--red);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--red);
+    }
+
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(72px, 10vw, 150px);
+      line-height: 0.9;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 32px;
+    }
+    .hero-title .slash {
+      color: var(--red);
+      display: inline-block;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 1px;
+      max-width: 520px;
+      line-height: 1.6;
+      margin-bottom: 48px;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 56px;
+    }
+    .stat-item { display: flex; flex-direction: column; gap: 4px; }
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .stat-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      right: 48px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .scroll-hint::after {
+      content: '';
+      display: block;
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(to bottom, var(--muted), transparent);
+      animation: scrollLine 1.8s ease-in-out infinite;
+    }
+    @keyframes scrollLine {
+      0%, 100% { opacity: 0.3; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.3); }
+    }
+
+    /* SECTION COMMON */
+    section { position: relative; }
+
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 56px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--red);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(42px, 5vw, 72px);
+      letter-spacing: 3px;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .section-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* DISCOGRAPHY */
+    #diskografi {
+      padding: 120px 48px;
+    }
+
+    .discography-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 2px;
+    }
+
+    .album-card {
+      position: relative;
+      aspect-ratio: 1;
+      background: var(--surface);
+      overflow: hidden;
+      cursor: none;
+      group: true;
+    }
+
+    .album-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(200,0,26,0.15), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 2;
+    }
+    .album-card:hover::before { opacity: 1; }
+
+    .album-art {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      color: rgba(200,0,26,0.15);
+      position: relative;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .album-art-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .album-lightning {
+      font-size: 80px;
+      line-height: 1;
+      color: rgba(200,0,26,0.08);
+      position: absolute;
+      right: -10px;
+      bottom: -10px;
+      font-family: 'Bebas Neue', sans-serif;
+    }
+
+    .album-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10,10,8,0.95) 0%, rgba(10,10,8,0.4) 50%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 20px;
+      z-index: 3;
+      transform: translateY(30%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .album-card:hover .album-overlay { transform: translateY(0); }
+
+    .album-year {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .album-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .album-tracks {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .album-era {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--gold);
+      text-transform: uppercase;
+      z-index: 4;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .album-card:hover .album-era { opacity: 1; }
+
+    /* ALBUM COLOR VARIANTS */
+    .album-card:nth-child(1) .album-art { background: #0e0c08; }
+    .album-card:nth-child(2) .album-art { background: #0c0e0a; }
+    .album-card:nth-child(3) .album-art { background: #0e0a0a; }
+    .album-card:nth-child(4) .album-art { background: #0a0c0e; }
+    .album-card:nth-child(5) .album-art { background: #0e0e0a; }
+    .album-card:nth-child(6) .album-art { background: #0c0a0e; }
+    .album-card:nth-child(7) .album-art { background: #0e0b0a; }
+    .album-card:nth-child(8) .album-art { background: #0a0e0c; }
+    .album-card:nth-child(9) .album-art { background: #0d0c0a; }
+    .album-card:nth-child(10) .album-art { background: #0a0d0e; }
+    .album-card:nth-child(11) .album-art { background: #0e0a0c; }
+    .album-card:nth-child(12) .album-art { background: #0c0e0a; }
+    .album-card:nth-child(13) .album-art { background: #0e0c0b; }
+    .album-card:nth-child(14) .album-art { background: #0a0b0e; }
+    .album-card:nth-child(15) .album-art { background: #0e0a0a; }
+    .album-card:nth-child(16) .album-art { background: #0a0e0a; }
+    .album-card:nth-child(17) .album-art { background: #0c0c0e; }
+
+    /* TIMELINE */
+    #zaman {
+      padding: 120px 48px;
+      background: var(--bg2);
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 80px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--border) 10%, var(--border) 90%, transparent);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 56px;
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: fadeSlide 0.6s ease forwards;
+    }
+    .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+    .timeline-item:nth-child(2) { animation-delay: 0.2s; }
+    .timeline-item:nth-child(3) { animation-delay: 0.3s; }
+    .timeline-item:nth-child(4) { animation-delay: 0.4s; }
+    .timeline-item:nth-child(5) { animation-delay: 0.5s; }
+    .timeline-item:nth-child(6) { animation-delay: 0.6s; }
+    .timeline-item:nth-child(7) { animation-delay: 0.7s; }
+    .timeline-item:nth-child(8) { animation-delay: 0.8s; }
+    .timeline-item:nth-child(9) { animation-delay: 0.9s; }
+
+    @keyframes fadeSlide {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -68px;
+      top: 8px;
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(200,0,26,0.6);
+    }
+    .timeline-dot.major {
+      background: var(--gold);
+      box-shadow: 0 0 16px rgba(201,162,39,0.7);
+      width: 12px;
+      height: 12px;
+      top: 6px;
+      left: -70px;
+    }
+
+    .timeline-year-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+    .timeline-dot.major ~ * .timeline-year-badge { color: var(--gold); }
+
+    .timeline-event-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .timeline-event-desc {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .timeline-tag {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* LYRICS */
+    #sozler {
+      padding: 120px 48px;
+    }
+
+    .lyrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+
+    .lyric-card {
+      background: var(--surface);
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      cursor: none;
+      transition: background 0.3s;
+    }
+    .lyric-card:hover { background: #1a1a14; }
+
+    .lyric-card::after {
+      content: '⚡';
+      position: absolute;
+      right: 20px;
+      bottom: 10px;
+      font-size: 80px;
+      opacity: 0.04;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+    }
+    .lyric-card:hover::after { opacity: 0.08; transform: scale(1.1) rotate(-5deg); }
+
+    .lyric-song {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .lyric-album-ref {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--red);
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+    }
+
+    .lyric-original {
+      font-style: italic;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 16px;
+      padding-left: 16px;
+      border-left: 2px solid var(--border);
+    }
+
+    .lyric-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--muted);
+    }
+    .lyric-divider::before, .lyric-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .lyric-tr {
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.8;
+      padding-left: 16px;
+      border-left: 2px solid var(--red);
+    }
+
+    /* CONCERTS */
+    #konserler {
+      padding: 120px 48px;
+      background: var(--bg2);
+    }
+
+    .concert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .concert-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 160px 140px;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 24px;
+      background: var(--surface);
+      border-left: 3px solid transparent;
+      transition: all 0.25s;
+      cursor: none;
+    }
+    .concert-row:hover {
+      background: #1c1c14;
+      border-left-color: var(--red);
+      transform: translateX(4px);
+    }
+
+    .concert-year {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--red);
+    }
+
+    .concert-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .concert-venue {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .concert-location {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .concert-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid;
+      justify-self: end;
+    }
+    .concert-badge.live { border-color: var(--gold); color: var(--gold); }
+    .concert-badge.studio { border-color: var(--border); color: var(--muted); }
+    .concert-badge.legendary { border-color: var(--red); color: var(--red); }
+
+    /* MEMBERS */
+    #kadro {
+      padding: 120px 48px;
+    }
+
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 2px;
+    }
+
+    .member-card {
+      background: var(--surface);
+      padding: 36px 28px;
+      position: relative;
+      overflow: hidden;
+      cursor: none;
+    }
+
+    .member-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--red);
+      transform: scaleX(0);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .member-card:hover::before { transform: scaleX(1); }
+
+    .member-initials {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      color: rgba(200,0,26,0.12);
+      line-height: 1;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    .member-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .member-role {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--red);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .member-years {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .member-note {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .member-status {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .member-status.active { background: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.5); }
+    .member-status.inactive { background: var(--border); }
+    .member-status.rip { background: var(--gold); box-shadow: 0 0 8px rgba(201,162,39,0.4); }
+
+    /* MARQUEE */
+    .marquee-wrap {
+      padding: 28px 0;
+      background: var(--red);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .marquee-inner {
+      display: inline-block;
+      animation: marquee 30s linear infinite;
+    }
+    .marquee-wrap:hover .marquee-inner { animation-play-state: paused; }
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .marquee-text {
+      display: inline-block;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 6px;
+      color: rgba(255,255,255,0.9);
+      padding: 0 40px;
+    }
+    .marquee-dot {
+      display: inline-block;
+      color: rgba(255,255,255,0.4);
+      margin: 0 8px;
+    }
+
+    /* FOOTER */
+    footer {
+      padding: 80px 48px 48px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 60px;
+    }
+
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 4px;
+      color: var(--accent);
+    }
+    .footer-logo span { color: var(--red); }
+
+    .footer-tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-top: 8px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 60px;
+    }
+
+    .footer-col h4 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--red);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-col a {
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .footer-col a:hover { color: var(--text); }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-copy {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .footer-bolt {
+      font-size: 24px;
+      color: var(--red);
+      opacity: 0.5;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,5,4,0.92);
+      z-index: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      width: 90%;
+      max-width: 680px;
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--red);
+    }
+
+    .modal-header {
+      padding: 36px 40px 24px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 2;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 6px 12px;
+      cursor: none;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { border-color: var(--red); color: var(--red); }
+
+    .modal-album-year {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+
+    .modal-album-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+
+    .modal-body { padding: 32px 40px; }
+
+    .track-list { list-style: none; }
+
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.2s;
+      cursor: none;
+    }
+    .track-item:hover { padding-left: 8px; }
+    .track-item:hover .track-name { color: var(--red-hot); }
+
+    .track-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      width: 24px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .track-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text);
+      flex: 1;
+      transition: color 0.2s;
+    }
+
+    .track-duration {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* SEARCH */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 40px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .search-bar input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 14px 20px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: var(--text);
+    }
+    .search-bar input::placeholder { color: var(--muted); }
+
+    .search-bar button {
+      background: var(--red);
+      border: none;
+      padding: 14px 20px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: white;
+      text-transform: uppercase;
+      cursor: none;
+      transition: background 0.2s;
+    }
+    .search-bar button:hover { background: var(--red-hot); }
+
+    /* ERA FILTER */
+    .era-filter {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .era-btn {
+      background: var(--surface);
+      border: none;
+      padding: 8px 18px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      cursor: none;
+      transition: all 0.2s;
+    }
+    .era-btn:hover, .era-btn.active { background: var(--red); color: white; }
+
+    /* SCROLL ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--red); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      .hero { padding: 0 24px 60px; }
+      #diskografi, #zaman, #sozler, #konserler, #kadro { padding: 80px 24px; }
+      .lyrics-grid { grid-template-columns: 1fr; }
+      .concert-row { grid-template-columns: 80px 1fr; }
+      .concert-location, .concert-badge { display: none; }
+      .footer-links { display: none; }
+      .footer-top { flex-direction: column; gap: 24px; }
+      .hero-stats { gap: 32px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CURSOR -->
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">ARO<span>⚡</span>YETT</a>
+    <ul class="nav-links">
+      <li><a href="#diskografi">Diskografi</a></li>
+      <li><a href="#zaman">Tarihçe</a></li>
+      <li><a href="#sozler">Çeviriler</a></li>
+      <li><a href="#konserler">Konserler</a></li>
+      <li><a href="#kadro">Kadro</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-year">1973</div>
+
+    <div class="hero-content">
+      <p class="hero-tag">AC/DC Fan & Arşiv Platformu</p>
+      <h1 class="hero-title">
+        HIGH<br>VOLTAGE<br><span class="slash">⚡</span> ARŞIV
+      </h1>
+      <p class="hero-sub">
+        1973'ten günümüze AC/DC'nin tüm diskografisi, konser kayıtları ve Türkçe çeviri sözleri. Efsanenin kaynağına ulaş.
+      </p>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-num">17</span>
+          <span class="stat-label">Stüdyo Albümü</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">200+</span>
+          <span class="stat-label">Şarkı Çevirisi</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">50+</span>
+          <span class="stat-label">Konser Kaydı</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">51</span>
+          <span class="stat-label">Yıllık Miras</span>
+        </div>
+      </div>
+    </div>
+
+    <span class="scroll-hint">Kaydır</span>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap">
+    <div class="marquee-inner">
+      <span class="marquee-text">HIGHWAY TO HELL</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">BACK IN BLACK</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">THUNDERSTRUCK</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">YOU SHOOK ME ALL NIGHT LONG</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">HELLS BELLS</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">TNT</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">SHOOT TO THRILL</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">DIRTY DEEDS DONE DIRT CHEAP</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">HIGHWAY TO HELL</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">BACK IN BLACK</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">THUNDERSTRUCK</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">YOU SHOOK ME ALL NIGHT LONG</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">HELLS BELLS</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">TNT</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">SHOOT TO THRILL</span><span class="marquee-dot">⚡</span>
+      <span class="marquee-text">DIRTY DEEDS DONE DIRT CHEAP</span><span class="marquee-dot">⚡</span>
+    </div>
+  </div>
+
+  <!-- DISCOGRAPHY -->
+  <section id="diskografi">
+    <div class="section-header reveal">
+      <div>
+        <p class="section-label">1973 — 2023</p>
+        <h2 class="section-title">Diskografi</h2>
+      </div>
+      <div>
+        <div class="era-filter">
+          <button class="era-btn active" onclick="filterEra('all', this)">Tümü</button>
+          <button class="era-btn" onclick="filterEra('bon', this)">Bon Scott Dönemi</button>
+          <button class="era-btn" onclick="filterEra('brian', this)">Brian Johnson Dönemi</button>
+        </div>
+        <span class="section-count">17 stüdyo albümü</span>
+      </div>
+    </div>
+
+    <div class="discography-grid" id="albumGrid">
+      <!-- JS ile render edilecek -->
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section id="zaman">
+    <div class="section-header reveal">
+      <div>
+        <p class="section-label">Sydney, 1973</p>
+        <h2 class="section-title">Tarihçe</h2>
+      </div>
+      <span class="section-count">51 yıllık yolculuk</span>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot major"></div>
+        <p class="timeline-year-badge">1973</p>
+        <h3 class="timeline-event-title">Kuruluş — Sydney, Avustralya</h3>
+        <p class="timeline-event-desc">Malcolm ve Angus Young kardeşler tarafından Sydney'de kuruldu. Bon Scott'ın ön vokal olarak katılmasıyla kadro şekillendi.</p>
+        <span class="timeline-tag">Kuruluş</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <p class="timeline-year-badge">1975</p>
+        <h3 class="timeline-event-title">High Voltage & T.N.T.</h3>
+        <p class="timeline-event-desc">İlk iki stüdyo albümü Avustralya'da yayımlandı. Raw blues-rock enerjisi dünyaya yayılmaya başladı.</p>
+        <span class="timeline-tag">Albüm</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <p class="timeline-year-badge">1979</p>
+        <h3 class="timeline-event-title">Highway to Hell — Dünya Çapında Patlama</h3>
+        <p class="timeline-event-desc">Müzik tarihinin en ikonik hard rock albümlerinden biri. Bon Scott döneminin zirve noktası. Dünya genelinde 7 milyon kopya satış.</p>
+        <span class="timeline-tag">Dönüm Noktası</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot major"></div>
+        <p class="timeline-year-badge">1980</p>
+        <h3 class="timeline-event-title">Bon Scott'ın Ölümü ve Back in Black</h3>
+        <p class="timeline-event-desc">19 Şubat 1980'de Bon Scott hayatını kaybetti. Grubun dağılmak yerine ileriye gitmesi ve Brian Johnson ile Back in Black'i çıkarması müzik tarihinin en cesur kararlarından biri olarak tarihe geçti.</p>
+        <span class="timeline-tag">Efsane</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot major"></div>
+        <p class="timeline-year-badge">1981</p>
+        <h3 class="timeline-event-title">Back in Black — Tarihin En Çok Satan Albümü</h3>
+        <p class="timeline-event-desc">50+ milyon satışla tüm zamanların en çok satan 3. albümü. "Hells Bells", "You Shook Me All Night Long" ve "Back in Black" klasiklerin klasiği.</p>
+        <span class="timeline-tag">Rekor</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <p class="timeline-year-badge">1991</p>
+        <h3 class="timeline-event-title">The Razors Edge & Thunderstruck</h3>
+        <p class="timeline-event-desc">Yeni nesle ulaşan Thunderstruck, grubun en tanınan açılış riflerinden birine ev sahipliği yaptı. Stadyumları sallayan bir döneme kapı araladı.</p>
+        <span class="timeline-tag">Albüm</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot major"></div>
+        <p class="timeline-year-badge">2003</p>
+        <h3 class="timeline-event-title">Rock and Roll Hall of Fame</h3>
+        <p class="timeline-event-desc">Rock and Roll Şöhretler Müzesi'ne kabul edilerek resmi olarak efsane statüsüne ulaştılar.</p>
+        <span class="timeline-tag">Ödül</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <p class="timeline-year-badge">2020</p>
+        <h3 class="timeline-event-title">Malcolm'suz Dönüşüş — Power Up</h3>
+        <p class="timeline-event-desc">Kurucu gitarist Malcolm Young'ı kaybettikten sonra Power Up ile geri döndüler. Angus liderliğinde kadronun büyük çoğunluğu sahnede yeniden buluştu.</p>
+        <span class="timeline-tag">Dönüş</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot major"></div>
+        <p class="timeline-year-badge">2023</p>
+        <h3 class="timeline-event-title">PWR/UP Turu — Avrupa Seferi</h3>
+        <p class="timeline-event-desc">Avrupa stadyumlarını dolduran devasa bir turne. 80 yaşını geçen Angus Young hâlâ sahnede şort ve okul üniformasıyla enerji saçmaya devam ediyor.</p>
+        <span class="timeline-tag">Tur</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LYRICS -->
+  <section id="sozler">
+    <div class="section-header reveal">
+      <div>
+        <p class="section-label">Türkçe Çeviriler</p>
+        <h2 class="section-title">Şarkı Sözleri</h2>
+      </div>
+      <div>
+        <div class="search-bar" style="margin-bottom:0; width:300px;">
+          <input type="text" placeholder="Şarkı ara..." />
+          <button>Ara</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lyrics-grid">
+      <div class="lyric-card reveal">
+        <h3 class="lyric-song">Thunderstruck</h3>
+        <p class="lyric-album-ref">The Razors Edge — 1990</p>
+        <p class="lyric-original">
+          "I was caught<br>
+          In the middle of a railroad track<br>
+          I looked round<br>
+          And I knew there was no turning back"
+        </p>
+        <div class="lyric-divider">Türkçe Çeviri</div>
+        <p class="lyric-tr">
+          Bir demir yolu rayının<br>
+          Tam ortasına sıkışmıştım<br>
+          Etrafıma baktım<br>
+          Ve geri dönüşün olmadığını anladım
+        </p>
+      </div>
+
+      <div class="lyric-card reveal">
+        <h3 class="lyric-song">Highway to Hell</h3>
+        <p class="lyric-album-ref">Highway to Hell — 1979</p>
+        <p class="lyric-original">
+          "No stop signs, speed limit<br>
+          Nobody's gonna slow me down<br>
+          Like a wheel, gonna spin it<br>
+          Nobody's gonna mess me around"
+        </p>
+        <div class="lyric-divider">Türkçe Çeviri</div>
+        <p class="lyric-tr">
+          Dur işareti yok, hız sınırı yok<br>
+          Kimse beni yavaşlatamayacak<br>
+          Bir tekerlek gibi döneceğim<br>
+          Kimse benimle uğraşamayacak
+        </p>
+      </div>
+
+      <div class="lyric-card reveal">
+        <h3 class="lyric-song">Back in Black</h3>
+        <p class="lyric-album-ref">Back in Black — 1980</p>
+        <p class="lyric-original">
+          "Back in black, I hit the sack<br>
+          I've been too long, I'm glad to be back<br>
+          Yes, I'm let loose from the noose<br>
+          That's kept me hanging around"
+        </p>
+        <div class="lyric-divider">Türkçe Çeviri</div>
+        <p class="lyric-tr">
+          Siyahın içinde, yatağa girdim<br>
+          Çok uzun zamandır uzaktaydım, geri döndüğüme sevindim<br>
+          Evet, beni askıda tutan<br>
+          İlmekten kurtuldum
+        </p>
+      </div>
+
+      <div class="lyric-card reveal">
+        <h3 class="lyric-song">Hells Bells</h3>
+        <p class="lyric-album-ref">Back in Black — 1980</p>
+        <p class="lyric-original">
+          "I'm rolling thunder, pouring rain<br>
+          I'm coming on like a hurricane<br>
+          My lightning's flashing across the sky<br>
+          You're only young but you're gonna die"
+        </p>
+        <div class="lyric-divider">Türkçe Çeviri</div>
+        <p class="lyric-tr">
+          Gümbürdeyip, sağanak yağış döktüren<br>
+          Kasırga gibi üstünüze geliyorum<br>
+          Şimşeğim gökyüzünde çakıyor<br>
+          Hâlâ gençsin ama öleceksin
+        </p>
+      </div>
+
+      <div class="lyric-card reveal">
+        <h3 class="lyric-song">T.N.T.</h3>
+        <p class="lyric-album-ref">T.N.T. — 1975</p>
+        <p class="lyric-original">
+          "See me ride out of the sunset<br>
+          On your color TV screen<br>
+          Out for all that I can get<br>
+          If you know what I mean"
+        </p>
+        <div class="lyric-divider">Türkçe Çeviri</div>
+        <p class="lyric-tr">
+          Renkli televizyon ekranında<br>
+          Günbatımından çıkıp gelen beni gör<br>
+          Elimden geldiğince almak için geldim<br>
+          Ne demek istediğimi anlıyorsanız
+        </p>
+      </div>
+
+      <div class="lyric-card reveal">
+        <h3 class="lyric-song">You Shook Me All Night Long</h3>
+        <p class="lyric-album-ref">Back in Black — 1980</p>
+        <p class="lyric-original">
+          "She was a fast machine<br>
+          She kept her motor clean<br>
+          She was the best damn woman<br>
+          That I'd ever seen"
+        </p>
+        <div class="lyric-divider">Türkçe Çeviri</div>
+        <p class="lyric-tr">
+          Hızlı bir makineydi<br>
+          Motorunu temiz tutardı<br>
+          Hayatımda gördüğüm<br>
+          En iyi kadındı
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCERTS -->
+  <section id="konserler">
+    <div class="section-header reveal">
+      <div>
+        <p class="section-label">1975 — 2024</p>
+        <h2 class="section-title">Konser Kayıtları</h2>
+      </div>
+      <span class="section-count">Seçilmiş arşiv</span>
+    </div>
+
+    <div class="concert-list">
+      <div class="concert-row reveal">
+        <span class="concert-year">1977</span>
+        <div>
+          <p class="concert-name">Let There Be Rock: The Movie</p>
+          <p class="concert-venue">Le Pavillon de Paris, Fransa</p>
+        </div>
+        <span class="concert-location">Paris, FR</span>
+        <span class="concert-badge legendary">Efsanevi</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">1979</span>
+        <div>
+          <p class="concert-name">Highway to Hell Tour</p>
+          <p class="concert-venue">Hammersmith Odeon, Londra</p>
+        </div>
+        <span class="concert-location">Londra, UK</span>
+        <span class="concert-badge live">Canlı</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">1981</span>
+        <div>
+          <p class="concert-name">For Those About to Rock Tour</p>
+          <p class="concert-venue">Monsters of Rock, Castle Donington</p>
+        </div>
+        <span class="concert-location">İngiltere</span>
+        <span class="concert-badge legendary">Efsanevi</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">1991</span>
+        <div>
+          <p class="concert-name">The Razors Edge World Tour</p>
+          <p class="concert-venue">Giants Stadium, New Jersey</p>
+        </div>
+        <span class="concert-location">New Jersey, ABD</span>
+        <span class="concert-badge live">Canlı</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">1992</span>
+        <div>
+          <p class="concert-name">Live at Donington</p>
+          <p class="concert-venue">Monsters of Rock Festival</p>
+        </div>
+        <span class="concert-location">Castle Donington</span>
+        <span class="concert-badge legendary">Efsanevi</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">2009</span>
+        <div>
+          <p class="concert-name">Black Ice World Tour</p>
+          <p class="concert-venue">Estadio Santiago Bernabéu</p>
+        </div>
+        <span class="concert-location">Madrid, ES</span>
+        <span class="concert-badge live">Canlı</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">2010</span>
+        <div>
+          <p class="concert-name">Rock or Bust — Live at River Plate</p>
+          <p class="concert-venue">Estadio Monumental, Buenos Aires</p>
+        </div>
+        <span class="concert-location">Buenos Aires, AR</span>
+        <span class="concert-badge legendary">Efsanevi</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">2016</span>
+        <div>
+          <p class="concert-name">Rock or Bust World Tour</p>
+          <p class="concert-venue">Coachella Valley Supershow</p>
+        </div>
+        <span class="concert-location">California, ABD</span>
+        <span class="concert-badge live">Canlı</span>
+      </div>
+      <div class="concert-row reveal">
+        <span class="concert-year">2023</span>
+        <div>
+          <p class="concert-name">PWR/UP Tour — Europe Leg</p>
+          <p class="concert-venue">Wanda Metropolitano Stadium</p>
+        </div>
+        <span class="concert-location">Madrid, ES</span>
+        <span class="concert-badge live">Canlı</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEMBERS -->
+  <section id="kadro">
+    <div class="section-header reveal">
+      <div>
+        <p class="section-label">Efsaneler</p>
+        <h2 class="section-title">Kadro</h2>
+      </div>
+      <span class="section-count">Tüm dönemler</span>
+    </div>
+
+    <div class="members-grid">
+      <div class="member-card reveal">
+        <div class="member-status active"></div>
+        <div class="member-initials">AY</div>
+        <h3 class="member-name">Angus Young</h3>
+        <p class="member-role">Lead Gitar</p>
+        <p class="member-years">1973 — Günümüz</p>
+        <p class="member-note">Okul üniforması ve şortuyla sahnede yorulmaksızın dans eden hard rock'ın en ikonik gitaristi. Duck walk'ın mucidi.</p>
+      </div>
+      <div class="member-card reveal">
+        <div class="member-status rip"></div>
+        <div class="member-initials">MY</div>
+        <h3 class="member-name">Malcolm Young</h3>
+        <p class="member-role">Ritim Gitar</p>
+        <p class="member-years">1973 — 2014</p>
+        <p class="member-note">Grubun kurucu sesinin yüzde ellisi. En güçlü ritim gitar çalarlardan biri. 2017'de hayata gözlerini yumdu.</p>
+      </div>
+      <div class="member-card reveal">
+        <div class="member-status rip"></div>
+        <div class="member-initials">BS</div>
+        <h3 class="member-name">Bon Scott</h3>
+        <p class="member-role">Vokal</p>
+        <p class="member-years">1974 — 1980</p>
+        <p class="member-note">Rock tarihinin en karizmatik ve özgür seslerinden biri. Highway to Hell'in sesi, 33 Şubat 1980'de susturuldu.</p>
+      </div>
+      <div class="member-card reveal">
+        <div class="member-status active"></div>
+        <div class="member-initials">BJ</div>
+        <h3 class="member-name">Brian Johnson</h3>
+        <p class="member-role">Vokal</p>
+        <p class="member-years">1980 — Günümüz</p>
+        <p class="member-note">Bon Scott'ın ardından Back in Black'i hayata geçiren ses. Hard rock'ın en keskin fısıltısı ve çığlığı.</p>
+      </div>
+      <div class="member-card reveal">
+        <div class="member-status active"></div>
+        <div class="member-initials">CW</div>
+        <h3 class="member-name">Cliff Williams</h3>
+        <p class="member-role">Bass Gitar</p>
+        <p class="member-years">1977 — 2016, 2020 —</p>
+        <p class="member-note">Grubun derin sesinin taşıyıcısı. Onlarca yıl boyunca değişmeyen en güvenilir ritmik omurga.</p>
+      </div>
+      <div class="member-card reveal">
+        <div class="member-status active"></div>
+        <div class="member-initials">SR</div>
+        <h3 class="member-name">Stevie Young</h3>
+        <p class="member-role">Ritim Gitar</p>
+        <p class="member-years">2014 — Günümüz</p>
+        <p class="member-note">Amcası Malcolm Young'ın görevini devraldı. Young ailesinin mirası sahnede yaşamaya devam ediyor.</p>
+      </div>
+      <div class="member-card reveal">
+        <div class="member-status active"></div>
+        <div class="member-initials">MR</div>
+        <h3 class="member-name">Matt Laug</h3>
+        <p class="member-role">Davul</p>
+        <p class="member-years">2020 — Günümüz</p>
+        <p class="member-note">Power Up dönemiyle kadroya katılan davulcu. Grubun son büyük tur deneyimini şekillendirdi.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-top">
+      <div>
+        <p class="footer-logo">ARO<span>⚡</span>YETT</p>
+        <p class="footer-tagline">AC/DC Fan & Arşiv Platformu — 1973'ten Günümüze</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Arşiv</h4>
+          <ul>
+            <li><a href="#diskografi">Diskografi</a></li>
+            <li><a href="#zaman">Tarihçe</a></li>
+            <li><a href="#konserler">Konserler</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>İçerik</h4>
+          <ul>
+            <li><a href="#sozler">Şarkı Çevirileri</a></li>
+            <li><a href="#kadro">Kadro</a></li>
+            <li><a href="#">Haberler</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="#">Hakkında</a></li>
+            <li><a href="#">Katkıda Bulun</a></li>
+            <li><a href="#">İletişim</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2024 AroYett — Fan yapımı, ticari değil. Tüm haklar AC/DC ve ilgili taraflara aittir.</p>
+      <span class="footer-bolt">⚡</span>
+    </div>
+  </footer>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <p class="modal-album-year" id="modalYear"></p>
+        <h2 class="modal-album-title" id="modalTitle"></h2>
+        <button class="modal-close" onclick="closeModal()">ESC / KAPAT</button>
+      </div>
+      <div class="modal-body">
+        <ul class="track-list" id="trackList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CURSOR
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx + 'px';
+      cursor.style.top = my + 'px';
+    });
+
+    function animateRing() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top = ry + 'px';
+      requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    document.querySelectorAll('a, button, .album-card, .lyric-card, .concert-row, .member-card').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '18px';
+        cursor.style.height = '18px';
+        ring.style.width = '54px';
+        ring.style.height = '54px';
+        ring.style.opacity = '1';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '10px';
+        cursor.style.height = '10px';
+        ring.style.width = '36px';
+        ring.style.height = '36px';
+        ring.style.opacity = '0.5';
+      });
+    });
+
+    // ALBUMS DATA
+    const albums = [
+      { year: 1975, name: "High Voltage", era: "bon", tracks: ["Baby, Please Don't Go","She's Got Balls","Little Lover","Stick Around","Soul Stripper","You Ain't Got a Hold on Me","Love Song","Show Business"], durations: ["3:48","3:48","4:08","3:10","5:39","3:57","5:47","5:11"] },
+      { year: 1975, name: "T.N.T.", era: "bon", tracks: ["It's a Long Way to the Top","Rock 'n' Roll Singer","The Jack","Live Wire","T.N.T.","Rocker","Can I Sit Next to You Girl","High Voltage","School Days"], durations: ["5:16","4:55","5:26","5:08","3:35","4:02","4:09","4:11","5:55"] },
+      { year: 1976, name: "Dirty Deeds Done Dirt Cheap", era: "bon", tracks: ["Dirty Deeds Done Dirt Cheap","Ain't No Fun","There's Gonna Be Some Rockin'","Problem Child","Squealer","Big Balls","Rock in Peace","Ride On","Jailbreak"], durations: ["4:11","3:58","3:59","5:24","5:25","2:42","4:01","5:43","4:14"] },
+      { year: 1976, name: "Let There Be Rock", era: "bon", tracks: ["Go Down","Dog Eat Dog","Let There Be Rock","Bad Boy Boogie","Problem Child","Overdose","Hell Ain't a Bad Place to Be","Whole Lotta Rosie"], durations: ["5:11","3:33","6:05","4:23","5:43","6:24","4:07","5:19"] },
+      { year: 1978, name: "Powerage", era: "bon", tracks: ["Rock 'n' Roll Damnation","Gimme a Bullet","Down Payment Blues","Gone Shootin'","Riff Raff","Sin City","Up to My Neck in You","What's Next to the Moon","Cold Hearted Man","Kicked in the Teeth"], durations: ["3:38","3:28","5:07","4:08","5:28","4:22","3:59","3:50","3:30","3:48"] },
+      { year: 1979, name: "Highway to Hell", era: "bon", tracks: ["Highway to Hell","Girls Got Rhythm","Walk All Over You","Touch Too Much","Beating Around the Bush","Shot Down in Flames","Get It Hot","If You Want Blood","Love Hungry Man","Night Prowler"], durations: ["3:28","3:23","5:05","4:26","3:56","3:23","3:03","4:36","4:14","6:27"] },
+      { year: 1980, name: "Back in Black", era: "brian", tracks: ["Hells Bells","Shoot to Thrill","What Do You Do for Money Honey","Given the Dog a Bone","Let Me Put My Love Into You","Back in Black","You Shook Me All Night Long","Have a Drink on Me","Shake a Leg","Rock and Roll Ain't Noise Pollution"], durations: ["5:12","5:17","3:31","3:31","4:15","4:15","3:30","3:58","4:05","4:15"] },
+      { year: 1981, name: "For Those About to Rock", era: "brian", tracks: ["For Those About to Rock (We Salute You)","Put the Finger on You","Let's Get It Up","Inject the Venom","Snowballed","Evil Walks","C.O.D.","Breaking the Rules","Night of the Long Knives","Spellbound"], durations: ["5:44","3:25","3:41","3:32","3:21","4:23","3:21","4:19","3:40","5:26"] },
+      { year: 1983, name: "Flick of the Switch", era: "brian", tracks: ["Rising Power","This House Is on Fire","Flick of the Switch","Nervous Shakedown","Landslide","Guns for Hire","Deep in the Hole","Bedlam in Belgium","Badlands","Brain Shake"], durations: ["3:37","4:05","3:26","4:11","4:11","3:47","4:30","3:47","4:28","4:04"] },
+      { year: 1985, name: "Fly on the Wall", era: "brian", tracks: ["Fly on the Wall","Shake Your Foundations","First Blood","Danger","Sink the Pink","Playing with Girls","Stand Up","Hell or High Water","Back in Business","Send for the Man"], durations: ["3:42","4:03","4:05","4:03","3:58","3:58","3:58","4:40","4:03","3:38"] },
+      { year: 1988, name: "Blow Up Your Video", era: "brian", tracks: ["Heatseeker","That's the Way I Wanna Rock 'n' Roll","Meanstreak","Go Zone","Kissin' Dynamite","Nick of Time","Some Sin for Nuthin'","Ruff Stuff","Two's Up","This Means War"], durations: ["3:26","4:01","4:18","4:12","3:28","4:36","3:20","3:23","5:28","4:02"] },
+      { year: 1990, name: "The Razors Edge", era: "brian", tracks: ["Thunderstruck","Fire Your Guns","Moneytalks","The Razors Edge","Mistress for Christmas","Rock Your Heart Out","Are You Ready","Got You by the Balls","Shot of Love","Let's Make It","Goodbye & Good Riddance to Bad Luck","If You Dare"], durations: ["4:52","3:10","3:59","4:22","3:56","4:04","4:10","4:25","3:36","4:05","3:13","2:52"] },
+      { year: 2000, name: "Stiff Upper Lip", era: "brian", tracks: ["Stiff Upper Lip","Meltdown","House of Jazz","Hold Me Back","Safe in New York City","Can't Stand Still","Can't Stop Rock 'n' Roll","Satellite Blues","Damned","Come and Get It","All Screwed Up","Give It Up"], durations: ["3:34","3:35","3:58","3:44","3:58","3:41","4:13","4:07","3:42","3:29","4:41","4:34"] },
+      { year: 2008, name: "Black Ice", era: "brian", tracks: ["Rock N Roll Train","Skies on Fire","Big Jack","Anything Goes","War Machine","Smash 'n' Grab","Spoilin' for a Fight","Wheels","Decibel","Stormy May Day","She Likes Rock N Roll","Money Made","Rock N Roll Dream","Rocking All the Way","Black Ice"], durations: ["3:32","3:48","3:49","3:33","3:43","3:27","3:28","3:15","3:48","3:27","4:00","3:55","3:55","4:07","3:44"] },
+      { year: 2014, name: "Rock or Bust", era: "brian", tracks: ["Play Ball","Rock or Bust","Fire with Fire","Rock the Blues Away","Miss Adventure","Dogs of War","Got Some Rock & Roll Thunder","Hard Times","Baptism by Fire","Rock the House","Sweet Candy","Emission Control"], durations: ["3:25","2:38","3:07","3:35","3:33","3:53","3:17","3:24","3:26","3:20","3:14","3:38"] },
+      { year: 2020, name: "Power Up", era: "brian", tracks: ["Realize","Rejection","Shot in the Dark","Through the Mists of Time","Kick You When You're Down","Witch's Spell","Demon Fire","Wild Reputation","No Man's Land","Systems Down","Money Shot","Code Red"], durations: ["3:18","3:15","3:05","3:29","3:23","3:35","3:21","3:09","3:22","3:17","3:23","3:15"] },
+    ];
+
+    function renderAlbums(filter = 'all') {
+      const grid = document.getElementById('albumGrid');
+      grid.innerHTML = '';
+      const filtered = filter === 'all' ? albums : albums.filter(a => a.era === filter);
+      filtered.forEach(album => {
+        const card = document.createElement('div');
+        card.className = 'album-card';
+        card.innerHTML = `
+          <div class="album-art">
+            <div class="album-art-inner">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:rgba(200,0,26,0.2);letter-spacing:4px;">${album.year}</span>
+            </div>
+            <span class="album-lightning">⚡</span>
+          </div>
+          <span class="album-era">${album.era === 'bon' ? 'Bon Scott' : 'Brian Johnson'}</span>
+          <div class="album-overlay">
+            <p class="album-year">${album.year}</p>
+            <h3 class="album-name">${album.name}</h3>
+            <p class="album-tracks">${album.tracks.length} Parça</p>
+          </div>
+        `;
+        card.addEventListener('click', () => openModal(album));
+        grid.appendChild(card);
+      });
+    }
+
+    renderAlbums();
+
+    function filterEra(era, btn) {
+      document.querySelectorAll('.era-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAlbums(era);
+    }
+
+    // MODAL
+    function openModal(album) {
+      document.getElementById('modalYear').textContent = album.year;
+      document.getElementById('modalTitle').textContent = album.name;
+      const list = document.getElementById('trackList');
+      list.innerHTML = album.tracks.map((t, i) => `
+        <li class="track-item">
+          <span class="track-num">${String(i + 1).padStart(2, '0')}</span>
+          <span class="track-name">${t}</span>
+          <span class="track-duration">${album.durations[i] || ''}</span>
+        </li>
+      `).join('');
+      document.getElementById('modalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // SCROLL REVEAL
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
